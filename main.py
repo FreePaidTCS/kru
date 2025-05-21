@@ -43,7 +43,7 @@ def update_key():
     save_db(db)
     return jsonify({"status": "success"})
 
-# 🚀 **Yeni Endpoint: Reset HWID**
+# Endpoint: Reset HWID (sadece ilgili key için, 10 günde bir)
 @app.route("/reset_hwid", methods=["POST"])
 def reset_hwid():
     data = request.json
@@ -51,20 +51,28 @@ def reset_hwid():
     key = data["key"]
     new_hwid = data["new_hwid"]
     now = int(time.time())
-
     if key not in db:
         return jsonify({"status": "error", "message": "Key not found"}), 404
-
     last_reset = db[key].get("last_reset", 0)
-    if now - last_reset < 864000:  # 864000 saniye = 10 gün
+    if now - last_reset < 864000:  # 10 gün = 864000 saniye
         remaining = 864000 - (now - last_reset)
         return jsonify({"status": "error", "message": f"HWID reset için {remaining} saniye beklemelisin."}), 403
-
-    # HWID resetleme işlemi gerçekleşiyor
     db[key]["hwid"] = new_hwid
     db[key]["last_reset"] = now
     save_db(db)
     return jsonify({"status": "success", "message": "HWID reset başarılı!"})
+
+# Endpoint: Delete key
+@app.route("/delete", methods=["POST"])
+def delete_key():
+    data = request.json
+    db = load_db()
+    key = data["key"]
+    if key not in db:
+        return jsonify({"status": "error", "message": "Key not found"}), 404
+    del db[key]
+    save_db(db)
+    return jsonify({"status": "success", "message": "Key deleted successfully!"})
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=10000)
