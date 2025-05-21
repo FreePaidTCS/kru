@@ -5,7 +5,7 @@ import os
 app = Flask(__name__)
 DB_FILE = "database.json"
 
-# İlk başlatıldığında dosya yoksa oluştur
+# Eğer database.json yoksa oluştur
 if not os.path.exists(DB_FILE):
     with open(DB_FILE, "w") as f:
         json.dump({}, f)
@@ -43,6 +43,18 @@ def update_key():
     if key not in db:
         return jsonify({"status": "error", "message": "Key not found"}), 404
     db[key] = data["data"]
+    save_db(db)
+    return jsonify({"status": "success"})
+
+# Yeni: Key silme endpoint'i
+@app.route("/delete", methods=["POST"])
+def delete_key():
+    data = request.json
+    db = load_db()
+    key = data["key"]
+    if key not in db:
+        return jsonify({"status": "error", "message": "Key not found"}), 404
+    del db[key]
     save_db(db)
     return jsonify({"status": "success"})
 
