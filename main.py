@@ -6,7 +6,7 @@ import time
 app = Flask(__name__)
 DB_FILE = "database.json"
 
-# Eğer database.json yoksa oluştur
+# database.json yoksa oluşturuyoruz
 if not os.path.exists(DB_FILE):
     with open(DB_FILE, "w") as f:
         json.dump({}, f)
@@ -43,7 +43,7 @@ def update_key():
     save_db(db)
     return jsonify({"status": "success"})
 
-# Endpoint: Reset HWID (sadece ilgili key için, 10 günde bir)
+# Reset HWID: Sadece ilgili key için, 10 günde bir reset yapılabilir.
 @app.route("/reset_hwid", methods=["POST"])
 def reset_hwid():
     data = request.json
@@ -54,7 +54,7 @@ def reset_hwid():
     if key not in db:
         return jsonify({"status": "error", "message": "Key not found"}), 404
     last_reset = db[key].get("last_reset", 0)
-    if now - last_reset < 864000:  # 10 gün = 864000 saniye
+    if now - last_reset < 864000:  # 864000 saniye = 10 gün
         remaining = 864000 - (now - last_reset)
         return jsonify({"status": "error", "message": f"HWID reset için {remaining} saniye beklemelisin."}), 403
     db[key]["hwid"] = new_hwid
@@ -62,7 +62,7 @@ def reset_hwid():
     save_db(db)
     return jsonify({"status": "success", "message": "HWID reset başarılı!"})
 
-# Endpoint: Delete key
+# Delete key endpoint
 @app.route("/delete", methods=["POST"])
 def delete_key():
     data = request.json
