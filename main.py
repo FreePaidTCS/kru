@@ -1,6 +1,7 @@
 from flask import Flask, jsonify, request
 import json
 import os
+import time
 
 app = Flask(__name__)
 DB_FILE = "database.json"
@@ -17,10 +18,6 @@ def load_db():
 def save_db(data):
     with open(DB_FILE, "w") as f:
         json.dump(data, f, indent=4)
-
-@app.route("/")
-def home():
-    return "API Çalışıyor!"
 
 @app.route("/keys", methods=["GET"])
 def get_keys():
@@ -46,17 +43,28 @@ def update_key():
     save_db(db)
     return jsonify({"status": "success"})
 
-# Yeni: Key silme endpoint'i
-@app.route("/delete", methods=["POST"])
-def delete_key():
+# 🚀 **Yeni Endpoint: Reset HWID**
+@app.route("/reset_hwid", methods=["POST"])
+def reset_hwid():
     data = request.json
     db = load_db()
     key = data["key"]
+    new_hwid = data["new_hwid"]
+    now = int(time.time())
+
     if key not in db:
         return jsonify({"status": "error", "message": "Key not found"}), 404
-    del db[key]
+
+    last_reset = db[key].get("last_reset", 0)
+    if now - last_reset < 864000:  # 864000 saniye = 10 gün
+        remaining = 864000 - (now - last_reset)
+        return jsonify({"status": "error", "message": f"HWID reset için {remaining} saniye beklemelisin."}), 403
+
+    # HWID resetleme işlemi gerçekleşiyor
+    db[key]["hwid"] = new_hwid
+    db[key]["last_reset"] = now
     save_db(db)
-    return jsonify({"status": "success"})
+    return jsonify({"status": "success", "message": "HWID reset başarılı!"})
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=10000)
